@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.widget.TextView; // 必須引入
 import androidx.appcompat.app.AppCompatActivity;
 import android.net.wifi.WifiManager;
+import android.os.Build;
+
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,7 +25,6 @@ import java.net.InetSocketAddress; // 如果你有用到地址綁定
 public class MainActivity extends AppCompatActivity {
 
     private TextView debugTextView; // 宣告變數
-
     private WifiManager.MulticastLock multicastLock;
 
     @Override
@@ -31,72 +32,22 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 綁定 XML 中的 TextView
-        debugTextView = findViewById(R.id.debug_log);
-
-        WifiManager wifiManager = (WifiManager) getApplicationContext()
-                .getSystemService(WIFI_SERVICE);
-
-        if (wifiManager != null && wifiManager.getConnectionInfo() != null) {
-            int ip = wifiManager.getConnectionInfo().getIpAddress();
-            String ipString = String.format(
-                    Locale.getDefault(),
-                    "%d.%d.%d.%d",
-                    (ip & 0xff),
-                    (ip >> 8 & 0xff),
-                    (ip >> 16 & 0xff),
-                    (ip >> 24 & 0xff)
-            );
-            addLog("手機 IP: " + ipString);
+        // 啟動前台服務
+        Intent serviceIntent = new Intent(this, SocketService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
         } else {
-            addLog("無法取得 WiFi 資訊");
+            startService(serviceIntent);
         }
 
-        new Thread(this::startUdpBeacon).start();
-
-        addLog("App 已啟動，準備初始化伺服器...");
-
-        new Thread(this::startSocketServer).start();
-
-        addLog("手機 IP: " +
-                ((WifiManager)getApplicationContext()
-                        .getSystemService(WIFI_SERVICE))
-                        .getConnectionInfo().getIpAddress());
+        // 原本在 onCreate 裡的 startUdpBeacon 和 startSocketServer 執行緒都可以刪掉了
     }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         if (multicastLock != null && multicastLock.isHeld()) {
             multicastLock.release();
-        }
-    }
-
-    private void startUdpBeacon() {
-        try (DatagramSocket socket = new DatagramSocket(9528)) {
-            socket.setBroadcast(true); // 確保允許廣播
-            byte[] buffer = new byte[1024];
-            addLog("UDP 監聽中... (Port: 9528)");
-
-            while (true) {
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                socket.receive(packet); // 收到東西會往下跑
-
-                String message = new String(packet.getData(), 0, packet.getLength());
-                String senderIP = packet.getAddress().getHostAddress();
-
-                // 只要收到任何 UDP，先打 Log再說
-                addLog("收到 UDP 封包來自: " + senderIP + " 內容: " + message);
-
-                if ("PC2GBOARD_DISCOVERY".equals(message)) {
-                    addLog("確認身份成功，正在回覆 PC...");
-                    byte[] response = "PC2GBOARD_HERE".getBytes();
-                    DatagramPacket reply = new DatagramPacket(
-                            response, response.length, packet.getAddress(), packet.getPort());
-                    socket.send(reply);
-                }
-            }
-        } catch (IOException e) {
-            addLog("UDP 錯誤: " + e.getMessage());
         }
     }
 
@@ -113,41 +64,4 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void startSocketServer() {
-        try (ServerSocket serverSocket = new ServerSocket(9527)) {
-            addLog("伺服器已啟動，監聽 Port: 9527");
-
-            while (true) {
-                try (Socket client = serverSocket.accept()) {
-                    String clientIP = client.getInetAddress().getHostAddress();
-                    addLog("收到連線，來源 IP: " + clientIP);
-
-                    File cacheFile = new File(getCacheDir(), "sync.png");
-
-                    try (InputStream is = client.getInputStream();
-                         FileOutputStream fos = new FileOutputStream(cacheFile)) {
-
-                        byte[] buffer = new byte[8192];
-                        int len;
-                        while ((len = is.read(buffer)) != -1) {
-                            fos.write(buffer, 0, len);
-                        }
-
-                        addLog("圖片接收完畢 (" + cacheFile.length() + " bytes)");
-
-                        Intent intent = new Intent(this, ClipboardActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-                        startActivity(intent);
-
-                        addLog("已跳轉至 ClipboardActivity");
-
-                    } catch (IOException e) {
-                        addLog("傳輸出錯: " + e.getMessage());
-                    }
-                }
-            }
-        } catch (IOException e) {
-            addLog("Socket 啟動失敗: " + e.getMessage());
-        }
-    }
 }
