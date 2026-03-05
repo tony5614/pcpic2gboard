@@ -170,37 +170,16 @@ public class SocketService extends Service {
     private void launchClipboardActivity() {
         Log.d(TAG, "launchClipboardActivity 開始執行");
 
+        // 🔍 檢查 canDrawOverlays 權限
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            boolean canOverlay = android.provider.Settings.canDrawOverlays(this);
+            Log.d(TAG, "canDrawOverlays: " + canOverlay);
+        }
+
         Intent intent = new Intent(this, ClipboardActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        // 🔍 檢查通知權限（Android 13+）
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            boolean canNotify = nm != null && nm.areNotificationsEnabled();
-            Log.d(TAG, "通知權限狀態: " + canNotify);
-        }
-
-        Notification notify = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("收到圖片")
-                .setContentText("點擊寫入剪貼簿")
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_CALL)
-                .setFullScreenIntent(pendingIntent, true)
-                .setAutoCancel(true)
-                .build();
-
-        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        if (nm != null) {
-            nm.notify(2, notify);
-            Log.d(TAG, "通知已發出 (id=2)");
-        } else {
-            Log.e(TAG, "NotificationManager 為 null，通知發送失敗！");
-        }
+        startActivity(intent);
+        Log.d(TAG, "startActivity 已呼叫");
     }
 
     private void sleepQuietly() {

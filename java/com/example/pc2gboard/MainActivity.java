@@ -6,7 +6,8 @@ import android.widget.TextView; // 必須引入
 import androidx.appcompat.app.AppCompatActivity;
 import android.net.wifi.WifiManager;
 import android.os.Build;
-
+import android.provider.Settings;
+import android.net.Uri;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,7 +48,14 @@ public class MainActivity extends AppCompatActivity {
             startService(serviceIntent);
         }
 
-        // 原本在 onCreate 裡的 startUdpBeacon 和 startSocketServer 執行緒都可以刪掉了
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent overlayIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                startActivity(overlayIntent);
+            }
+        }
     }
 
     @Override
