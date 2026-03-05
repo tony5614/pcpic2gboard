@@ -58,7 +58,7 @@ public class SocketService extends Service {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("PC2Gboard 服務運行中")
                 .setContentText("正在背景監聽電腦端的圖片推送...")
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setOngoing(true) // 🔥 不可滑掉
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
@@ -151,15 +151,33 @@ public class SocketService extends Service {
                                 fos.write(buffer, 0, len);
                             }
                         }
-                        Intent intent = new Intent(this, ClipboardActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-                        startActivity(intent);
+                        launchClipboardActivity();
                     } catch (IOException e) { e.printStackTrace(); }
                 }
             } catch (IOException e) { e.printStackTrace(); sleepQuietly(); }
         }
     }
+    private void launchClipboardActivity() {
+        Intent intent = new Intent(this, ClipboardActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
 
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        Notification notify = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("收到圖片")
+                .setContentText("點擊寫入剪貼簿")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_CALL) // 🔥 CATEGORY_CALL 才能觸發 fullScreenIntent
+                .setFullScreenIntent(pendingIntent, true)       // 🔥 這是繞過限制的關鍵
+                .setAutoCancel(true)
+                .build();
+
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) nm.notify(2, notify); // 用 id=2，不要蓋掉常駐通知 id=1
+    }
     private void sleepQuietly() {
         try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
     }
@@ -171,7 +189,11 @@ public class SocketService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         Intent restartService = new Intent(getApplicationContext(), this.getClass());
         restartService.setPackage(getPackageName());
-        startService(restartService);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(restartService);
+        } else {
+            startService(restartService);
+        }
         super.onTaskRemoved(rootIntent);
     }
 
