@@ -40,7 +40,10 @@ public class ClipboardActivity extends Activity {
             ClipData clip = ClipData.newUri(getContentResolver(), "Image", contentUri);
             if (cb != null) {
                 cb.setPrimaryClip(clip);
+                android.util.Log.d("PC2Gboard", "✅ 剪貼簿寫入成功！");
                 status.setText("成功：已寫入剪貼簿！");
+            } else {
+                android.util.Log.e("PC2Gboard", "❌ ClipboardManager 為 null");
             }
         } else {
             status.setText("錯誤：找不到圖片檔案");

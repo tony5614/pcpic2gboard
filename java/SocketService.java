@@ -8,6 +8,12 @@ import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import androidx.core.app.NotificationCompat;
+import android.content.ClipboardManager;
+import android.content.ClipData;
+import android.net.Uri;
+import android.content.ClipboardManager;
+import android.content.ClipData;
+import androidx.core.content.FileProvider;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -151,10 +157,10 @@ public class SocketService extends Service {
                             }
                             Log.d(TAG, "圖片接收完成，共 " + totalBytes + " bytes，儲存至: " + cacheFile.getAbsolutePath());
                         }
-
+                        writeToClipboard(cacheFile);
                         Log.d(TAG, "準備呼叫 launchClipboardActivity()...");
-                        launchClipboardActivity();
-                        Log.d(TAG, "launchClipboardActivity() 呼叫完畢");
+                        //launchClipboardActivity();
+                        //Log.d(TAG, "launchClipboardActivity() 呼叫完畢");
 
                     } catch (IOException e) {
                         Log.e(TAG, "處理連線時發生異常: " + e.getMessage());
@@ -166,7 +172,25 @@ public class SocketService extends Service {
             }
         }
     }
+    private void writeToClipboard(File imageFile) {
+        try {
+            Uri contentUri = FileProvider.getUriForFile(
+                    this, getPackageName() + ".fileprovider", imageFile);
+            grantUriPermission("com.google.android.inputmethod.latin",
+                    contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
+            ClipboardManager cb = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newUri(getContentResolver(), "Image", contentUri);
+            if (cb != null) {
+                cb.setPrimaryClip(clip);
+                Log.d(TAG, "✅ 剪貼簿寫入成功！");
+            } else {
+                Log.e(TAG, "❌ ClipboardManager 為 null");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ 剪貼簿寫入失敗: " + e.getMessage());
+        }
+    }
     private void launchClipboardActivity() {
         Log.d(TAG, "launchClipboardActivity 開始執行");
 
