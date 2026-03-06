@@ -48,6 +48,11 @@ public class MainActivity extends AppCompatActivity {
             startService(serviceIntent);
         }
 
+        // 🔥 引導使用者開啟「允許背景耗電」
+        Intent batteryIntent = new Intent();
+        batteryIntent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+        batteryIntent.setData(Uri.parse("package:" + getPackageName()));
+        startActivity(batteryIntent);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) {
