@@ -32,15 +32,7 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".ClipboardActivity"
-            android:theme="@style/Theme.AppCompat.Light"
-            android:label="剪貼簿處理中..."
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:showOnLockScreen="true"
-            android:turnScreenOn="true"
-            android:windowSoftInputMode="stateUnchanged" />
+
 
 
         <provider

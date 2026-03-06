@@ -158,7 +158,7 @@ public class SocketService extends Service {
                             Log.d(TAG, "圖片接收完成，共 " + totalBytes + " bytes，儲存至: " + cacheFile.getAbsolutePath());
                         }
                         writeToClipboard(cacheFile);
-                        Log.d(TAG, "準備呼叫 launchClipboardActivity()...");
+                        //Log.d(TAG, "準備呼叫 launchClipboardActivity()...");
                         //launchClipboardActivity();
                         //Log.d(TAG, "launchClipboardActivity() 呼叫完畢");
 
@@ -183,28 +183,15 @@ public class SocketService extends Service {
             ClipData clip = ClipData.newUri(getContentResolver(), "Image", contentUri);
             if (cb != null) {
                 cb.setPrimaryClip(clip);
-                Log.d(TAG, "✅ 剪貼簿寫入成功！");
+                Log.d(TAG, "✅ 剪貼-簿寫入成功！");
             } else {
                 Log.e(TAG, "❌ ClipboardManager 為 null");
             }
         } catch (Exception e) {
-            Log.e(TAG, "❌ 剪貼簿寫入失敗: " + e.getMessage());
+            Log.e(TAG, "❌ 剪貼-簿寫入失敗: " + e.getMessage());
         }
     }
-    private void launchClipboardActivity() {
-        Log.d(TAG, "launchClipboardActivity 開始執行");
 
-        // 🔍 檢查 canDrawOverlays 權限
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            boolean canOverlay = android.provider.Settings.canDrawOverlays(this);
-            Log.d(TAG, "canDrawOverlays: " + canOverlay);
-        }
-
-        Intent intent = new Intent(this, ClipboardActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-        startActivity(intent);
-        Log.d(TAG, "startActivity 已呼叫");
-    }
 
     private void sleepQuietly() {
         try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
